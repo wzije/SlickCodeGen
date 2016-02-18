@@ -22,7 +22,8 @@ object Build extends Build {
         "mysql" % "mysql-connector-java" % "5.1.34",
         "com.zaxxer" % "HikariCP" % "2.4.3",
         "org.scalatest" %% "scalatest" % "2.2.4" % "test",
-        "postgresql" % "postgresql" % "9.1-901.jdbc4"
+        "postgresql" % "postgresql" % "9.1-901.jdbc4",
+        "com.typesafe" % "config" % "1.2.0"
       ),
       slickCodeGenTask
 
@@ -34,29 +35,39 @@ object Build extends Build {
 
   /** create task */
   lazy val slickGenerate = taskKey[Seq[File]]("slick code generation")
-
-  /** task generator*/
+//  val conf = ConfigFactory.parseFile(new File("conf/application.conf")).resolve()
+  /** task generator */
   lazy val slickCodeGenTask = slickGenerate := {
     val outputDir = (baseDirectory.value / "src" / "main" / "scala/").getPath // place generated files in sbt's managed sources folder
     println(outputDir)
     val username = "root"
     val password = "localhost"
-    val url = "jdbc:mysql://localhost/slick"
-    //    val url = "jdbc:h2:mem:test;INIT=runscript from 'src/main/sql/create.sql'" // connection info for a pre-populated throw-away, in-memory db for this demo, which is freshly initialized on every run
-    val jdbcDriver = "com.mysql.jdbc.Driver"
-    val slickDriver = "slick.driver.MySQLDriver"
+
+    /** mysql config*/
+    val mysqlUrl = "jdbc:mysql://localhost/slick"
+    val mysqlJdbcDriver = "com.mysql.jdbc.Driver"
+    // val url = "jdbc:h2:mem:test;INIT=runscript from 'src/main/sql/create.sql'" // connection info for a pre-populated throw-away, in-memory db for this demo, which is freshly initialized on every run
+
+    /**postgresql config*/
+    val postgreUrl = "jdbc:postgresql://localhost:5432/slick"
+    val postgreJdbcDriver = "org.postgresql.Driver"
+
+    val mysqlSlickDriver = "slick.driver.MySQLDriver"
+    val postgreSlickDriver = "slick.driver.PostgresDriver"
+
     val pkg = "me.codegen.models"
+
     (runner in Compile).value.run(
       "slick.codegen.SourceCodeGenerator",
       (dependencyClasspath in Compile).value.files,
-      Array(slickDriver, jdbcDriver, url, outputDir, pkg, username, password),
+      Array(postgreSlickDriver, postgreJdbcDriver, postgreUrl, outputDir, pkg, username, password),
       streams.value.log)
     val fname = outputDir + "/" + "me/codegen/models" + "/Tables.scala"
     Seq(file(fname))
   }
 
 
-  /** this for generate in compile*/
+  /** this for generate in compile */
   //  lazy val slickCodeGenTask = (baseDirectory, dependencyClasspath in Compile, runner in Compile, streams) map { (dir, cp, r, s) =>
   //    val outputDir = (dir / "src" / "main" / "scala/").getPath // place generated files in sbt's managed sources folder
   //    println(outputDir)
